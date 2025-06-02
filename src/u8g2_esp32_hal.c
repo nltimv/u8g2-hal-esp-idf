@@ -19,13 +19,15 @@ static u8g2_esp32_hal_t u8g2_esp32_hal;  // HAL state data.
 #define HOST    SPI2_HOST
 
 #undef ESP_ERROR_CHECK
-#define ESP_ERROR_CHECK(x)                   \
-  do {                                       \
-    esp_err_t rc = (x);                      \
-    if (rc != ESP_OK) {                      \
-      ESP_LOGE("err", "esp_err_t = %d", rc); \
-      assert(0 && #x);                       \
-    }                                        \
+#define ESP_ERROR_CHECK(x)                     \
+  do {                                         \
+    esp_err_t rc;                              \
+    do {                                       \
+      rc = (x);                                \
+      if (rc != ESP_OK) {                      \
+        ESP_LOGE("err", "esp_err_t = %d", rc); \
+      }                                        \
+    } while (rc != ESP_OK);                    \
   } while (0);
 
 /*
@@ -140,6 +142,7 @@ uint8_t u8g2_esp32_i2c_byte_cb(u8x8_t* u8x8,
       ESP_LOGI(TAG, "scl_io_num %d", u8g2_esp32_hal.bus.i2c.scl);
       conf.scl_io_num = u8g2_esp32_hal.bus.i2c.scl;
       conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+      conf.clk_flags = 0;
       ESP_LOGI(TAG, "clk_speed %d", I2C_MASTER_FREQ_HZ);
       conf.master.clk_speed = I2C_MASTER_FREQ_HZ;
       ESP_LOGI(TAG, "i2c_param_config %d", conf.mode);
@@ -178,7 +181,7 @@ uint8_t u8g2_esp32_i2c_byte_cb(u8x8_t* u8x8,
       ESP_LOGD(TAG, "End I2C transfer.");
       ESP_ERROR_CHECK(i2c_master_stop(handle_i2c));
       ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_MASTER_NUM, handle_i2c,
-                                           pdMS_TO_TICKS(I2C_TIMEOUT_MS)));
+                                             pdMS_TO_TICKS(I2C_TIMEOUT_MS)));
       i2c_cmd_link_delete(handle_i2c);
       break;
     }
